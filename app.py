@@ -6,12 +6,11 @@ import cloudinary.uploader
 
 app = Flask(__name__, static_folder=".")
 
+# Cloudinary Configuration (Direct Hardcoded Details)
 cloudinary.config(
-    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", "Uq8eywxb"),
-    api_key=os.environ.get("CLOUDINARY_API_KEY", "118664333995381"),
-    api_secret=os.environ.get(
-        "CLOUDINARY_API_SECRET", "JUVeYTckPyu6LknKqYQ6PEuNoM0"
-    ),
+    cloud_name="uq8eywxb",
+    api_key="118664333995381",
+    api_secret="JUVeYTckPyu6LknKqYQ6PEuNoM0",
 )
 
 DB_FILE = "papers_db.json"
