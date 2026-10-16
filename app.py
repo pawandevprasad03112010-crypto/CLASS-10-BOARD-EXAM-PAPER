@@ -7,9 +7,11 @@ import cloudinary.uploader
 app = Flask(__name__, static_folder=".")
 
 cloudinary.config(
-    cloud_name="uq89wywxh",
-    api_key="118664333995381",
-    api_secret="JUVeYTckPyu6LknKqYQ6PEuNoM0",
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", "uq89wywxh"),
+    api_key=os.environ.get("CLOUDINARY_API_KEY", "118664333995381"),
+    api_secret=os.environ.get(
+        "CLOUDINARY_API_SECRET", "JUVeYTckPyu6LknKqYQ6PEuNoM0"
+    ),
 )
 
 DB_FILE = "papers_db.json"
@@ -96,7 +98,6 @@ def upload_paper():
   })
 
 
-# पेपर डिलीट करने के लिए API
 @app.route("/api/delete", methods=["POST"])
 def delete_paper():
   data = request.json
