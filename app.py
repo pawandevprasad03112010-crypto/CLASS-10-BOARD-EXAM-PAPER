@@ -6,7 +6,6 @@ import cloudinary.uploader
 
 app = Flask(__name__, static_folder=".")
 
-# आपके क्लाउडिनरी क्रेडेंशियल्स सीधे यहाँ सेट कर दिए गए हैं
 cloudinary.config(
     cloud_name="uq89wywxh",
     api_key="118664333995381",
@@ -14,7 +13,7 @@ cloudinary.config(
 )
 
 DB_FILE = "papers_db.json"
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")  # आपका एडमिन पासवर्ड
+ADMIN_PASSWORD = "12300pawandevprasad03112010@gtss"
 
 
 def load_db():
@@ -42,18 +41,16 @@ def static_files(path):
   return send_from_directory(".", path)
 
 
-# सभी पेपर और सब्जेक्ट्स की लिस्ट मंगाने के लिए
 @app.route("/api/papers", methods=["GET"])
 def get_papers():
   return jsonify(load_db())
 
 
-# नया क्वेश्चन पेपर अपलोड करने के लिए
 @app.route("/api/upload", methods=["POST"])
 def upload_paper():
   password = request.form.get("password")
   if password != ADMIN_PASSWORD:
-    return jsonify({"success": False, "message": "गलत पासवर्ड!"}), 401
+    return jsonify({"success": False, "message": "Incorrect Password!"}), 401
 
   year = request.form.get("year")
   subject = request.form.get("subject")
@@ -63,7 +60,7 @@ def upload_paper():
     return (
         jsonify({
             "success": False,
-            "message": "ईयर, सब्जेक्ट और फाइलें जरूरी हैं!",
+            "message": "Year, Subject and Files are required!",
         }),
         400,
     )
@@ -77,7 +74,6 @@ def upload_paper():
   uploaded_urls = []
   for file in files:
     try:
-      # Cloudinary पर अपलोड करें
       upload_result = cloudinary.uploader.upload(file)
       url = upload_result.get("secure_url")
       uploaded_urls.append(url)
@@ -85,21 +81,43 @@ def upload_paper():
       return (
           jsonify({
               "success": False,
-              "message": f"अपलोड फेल हुआ: {str(e)}",
+              "message": f"Upload failed: {str(e)}",
           }),
           500,
       )
 
-  # पुराने URLs में नए वाले जोड़ दें (मल्टी-पेज सपोर्ट)
   db[year][subject].extend(uploaded_urls)
   save_db(db)
 
   return jsonify({
       "success": True,
-      "message": "पेपर सफलतापूर्वक अपलोड हो गया!",
+      "message": "Question papers uploaded successfully!",
       "urls": uploaded_urls,
   })
 
 
+# पेपर डिलीट करने के लिए API
+@app.route("/api/delete", methods=["POST"])
+def delete_paper():
+  data = request.json
+  password = data.get("password")
+  if password != ADMIN_PASSWORD:
+    return jsonify({"success": False, "message": "Incorrect Password!"}), 401
+
+  year = data.get("year")
+  subject = data.get("subject")
+  img_url = data.get("url")
+
+  db = load_db()
+  if year in db and subject in db[year]:
+    if img_url in db[year][subject]:
+      db[year][subject].remove(img_url)
+      save_db(db)
+      return jsonify({"success": True, "message": "Paper deleted successfully!"})
+
+  return jsonify({"success": False, "message": "Paper not found!"}), 404
+
+
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    
