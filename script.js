@@ -16,6 +16,22 @@ const subjectsList = [
     "Social Science"
 ];
 
+// एकेडमिक इयर की लिस्ट (Academic Years)
+const yearsList = [
+    "2026-2027",
+    "2025-2026",
+    "2024-2025",
+    "2023-2024",
+    "2022-2023",
+    "2021-2022",
+    "2020-2021",
+    "2019-2020",
+    "2018-2019",
+    "2017-2018",
+    "2016-2017",
+    "2015-2016"
+];
+
 async function fetchPapers() {
     try {
         let res = await fetch('/api/papers');
@@ -105,14 +121,9 @@ function renderHomeScreen(container) {
     card.className = 'card';
     
     card.innerHTML = `
-        <label for="yearSelect">Select Exam Year:</label>
+        <label for="yearSelect">Select Academic Year:</label>
         <select id="yearSelect">
-            <option value="2026">2026</option>
-            <option value="2025">2025</option>
-            <option value="2024">2024</option>
-            <option value="2023">2023</option>
-            <option value="2022">2022</option>
-            <option value="2021">2021</option>
+            ${yearsList.map(y => `<option value="${y}">${y}</option>`).join('')}
         </select>
         <button class="btn" id="okYearBtn" style="margin-top: 15px;">OK / Proceed</button>
     `;
@@ -185,7 +196,7 @@ function renderViewerScreen(container) {
             const downloadBtn = document.createElement('a');
             downloadBtn.href = url;
             downloadBtn.target = '_blank';
-            downloadBtn.download = `Paper_${appState.selectedYear}_${appState.selectedSubject}_Page_${index+1}.jpg`;
+            downloadBtn.download = `Paper_${appState.selectedYear.replace('-', '_')}_${appState.selectedSubject}_Page_${index+1}.jpg`;
             downloadBtn.className = 'side-download-btn';
             downloadBtn.innerHTML = '📥 Download';
 
@@ -306,14 +317,9 @@ function renderUploadFormScreen(container) {
     const card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = `
-        <label>Select Exam Year:</label>
+        <label>Select Academic Year:</label>
         <select id="upYear">
-            <option value="2026">2026</option>
-            <option value="2025">2025</option>
-            <option value="2024">2024</option>
-            <option value="2023">2023</option>
-            <option value="2022">2022</option>
-            <option value="2021">2021</option>
+            ${yearsList.map(y => `<option value="${y}">${y}</option>`).join('')}
         </select>
 
         <label style="margin-top: 15px;">Select Subject:</label>
