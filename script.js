@@ -16,13 +16,19 @@ const subjectsList = [
     "Social Science"
 ];
 
-// एकेडमिक इयर की लिस्ट (Academic Years)
 const yearsList = [
     "2026-2027",
     "2025-2026",
     "2024-2025",
     "2023-2024",
-    "2022-2023"
+    "2022-2023",
+    "2021-2022",
+    "2020-2021",
+    "2019-2020",
+    "2018-2019",
+    "2017-2018",
+    "2016-2017",
+    "2015-2016"
 ];
 
 async function fetchPapers() {
@@ -186,12 +192,11 @@ function renderViewerScreen(container) {
                 render();
             };
 
-            const downloadBtn = document.createElement('a');
-            downloadBtn.href = url;
-            downloadBtn.target = '_blank';
-            downloadBtn.download = `Paper_${appState.selectedYear.replace('-', '_')}_${appState.selectedSubject}_Page_${index+1}.jpg`;
+            const downloadBtn = document.createElement('button');
             downloadBtn.className = 'side-download-btn';
             downloadBtn.innerHTML = '📥 Download';
+            let fileName = `Paper_${appState.selectedYear.replace('-', '_')}_${appState.selectedSubject}_Page_${index+1}.jpg`;
+            downloadBtn.onclick = () => downloadImage(url, fileName);
 
             pageBox.appendChild(img);
             pageBox.appendChild(downloadBtn);
@@ -210,18 +215,44 @@ function renderViewerScreen(container) {
     container.appendChild(backBtn);
 }
 
+// मोबाइल गैलरी में डायरेक्ट डाउनलोड करने वाला स्मार्ट फंक्शन (Blob Download)
+async function downloadImage(url, filename) {
+    try {
+        alert("Downloading started... Please wait 📥");
+        let response = await fetch(url);
+        let blob = await response.blob();
+        let blobUrl = window.URL.createObjectURL(blob);
+        let a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(blobUrl);
+    } catch (e) {
+        // अगर कोई नेटवर्क या क्रॉस-ओरिजिन इश्यू हो, तो नए टैब में खोलकर डाउनलोड का विकल्प देगा
+        window.open(url, '_blank');
+    }
+}
+
 function renderImageViewerModal(appContainer) {
     const overlay = document.createElement('div');
     overlay.className = 'fullscreen-modal';
     
+    let fileName = `Paper_${appState.selectedYear ? appState.selectedYear.replace('-', '_') : 'Exam'}_Page.jpg`;
+
     overlay.innerHTML = `
         <div class="fullscreen-content">
             <button class="close-modal-btn" onclick="closeImageViewer()">✖ Close</button>
             <img src="${appState.activeImageViewer}" class="fullscreen-img" alt="Zoomed Paper">
-            <a href="${appState.activeImageViewer}" target="_blank" download class="btn" style="margin-top: 15px; text-align: center; text-decoration: none; display: block;">📥 Download Image to Gallery</a>
+            <button class="btn" id="fullDownloadBtn" style="margin-top: 15px;">📥 Download Image to Gallery</button>
         </div>
     `;
     appContainer.appendChild(overlay);
+
+    overlay.querySelector('#fullDownloadBtn').onclick = () => {
+        downloadImage(appState.activeImageViewer, fileName);
+    };
 }
 
 function closeImageViewer() {
@@ -398,7 +429,7 @@ function renderManagePapersScreen(container) {
                 sectionTitle.innerText = `${subject} (${year})`;
                 container.appendChild(sectionTitle);
 
-                pages.forEach((url) => {
+                pages.forEach((url, index) => {
                     const pageBox = document.createElement('div');
                     pageBox.className = 'paper-box';
 
@@ -409,11 +440,11 @@ function renderManagePapersScreen(container) {
                     const actionDiv = document.createElement('div');
                     actionDiv.className = 'action-buttons';
 
-                    const downloadBtn = document.createElement('a');
-                    downloadBtn.href = url;
-                    downloadBtn.target = '_blank';
+                    const downloadBtn = document.createElement('button');
                     downloadBtn.className = 'side-download-btn';
-                    downloadBtn.innerHTML = '📥 View';
+                    downloadBtn.innerHTML = '📥 Download';
+                    let fileName = `Paper_${year.replace('-', '_')}_${subject}_Page_${index+1}.jpg`;
+                    downloadBtn.onclick = () => downloadImage(url, fileName);
 
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'side-delete-btn';
@@ -475,4 +506,4 @@ function renderManagePapersScreen(container) {
 }
 
 fetchPapers();
-        
+                                                         
