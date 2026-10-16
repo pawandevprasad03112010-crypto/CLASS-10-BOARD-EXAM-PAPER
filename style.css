@@ -41,30 +41,36 @@ body {
 .app-header {
     background: var(--primary);
     color: white;
-    padding: 20px;
+    padding: 15px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     position: relative;
 }
 
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .app-header h1 {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     font-weight: 600;
 }
 
-.upload-btn-icon {
+.developer-btn-icon, .upload-btn-icon {
     background: rgba(255, 255, 255, 0.2);
     border: none;
     color: white;
-    padding: 8px 12px;
+    padding: 6px 10px;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     transition: background 0.2s;
 }
 
-.upload-btn-icon:active {
+.developer-btn-icon:active, .upload-btn-icon:active {
     background: rgba(255, 255, 255, 0.4);
 }
 
@@ -133,10 +139,6 @@ select:focus, input:focus {
     background: var(--danger);
     color: white;
     margin-top: 8px;
-}
-
-.btn-danger:active {
-    background: var(--danger-dark);
 }
 
 .list-item {
@@ -235,6 +237,7 @@ select:focus, input:focus {
     width: 100%;
     max-width: 400px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    text-align: center;
 }
 
 .fullscreen-modal {
