@@ -1,9 +1,10 @@
 let appState = {
-    currentScreen: 'home', // home, subjects, viewer, uploadLogin, uploadMenu, uploadForm, managePapers
+    currentScreen: 'home', 
     selectedYear: null,
     selectedSubject: null,
     papersData: {},
-    activeImageViewer: null 
+    activeImageViewer: null,
+    showDeveloperModal: false
 };
 
 const subjectsList = [
@@ -32,7 +33,10 @@ function render() {
     const header = document.createElement('div');
     header.className = 'app-header';
     header.innerHTML = `
-        <h1>📚 Board Exam Papers (Class 10)</h1>
+        <div class="header-left">
+            <button class="developer-btn-icon" onclick="openDeveloperModal()">👨‍💻 Dev</button>
+            <h1>📚 Class 10 Papers</h1>
+        </div>
         <button class="upload-btn-icon" onclick="openUploadLogin()">⚙️ Admin</button>
     `;
     app.appendChild(header);
@@ -61,6 +65,39 @@ function render() {
     if (appState.activeImageViewer) {
         renderImageViewerModal(app);
     }
+
+    if (appState.showDeveloperModal) {
+        renderDeveloperModal(app);
+    }
+}
+
+function openDeveloperModal() {
+    appState.showDeveloperModal = true;
+    render();
+}
+
+function closeDeveloperModal() {
+    appState.showDeveloperModal = false;
+    render();
+}
+
+function renderDeveloperModal(appContainer) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    
+    overlay.innerHTML = `
+        <div class="modal-content">
+            <h3 style="color: var(--primary); margin-bottom: 10px;">👨‍💻 App Developer</h3>
+            <p style="font-size: 1.05rem; font-weight: bold; color: var(--text-main); margin: 15px 0; line-height: 1.5;">
+                Developed by<br>
+                <span style="color: #4f46e5; font-size: 1.2rem;">PAWAN DEV PRASAD</span><br><br>
+                <span style="font-size: 0.9rem; font-weight: normal; color: #475569;">To promote Class 10th Board Exam Paper. Call this number:</span><br>
+                <a href="tel:9863454182" style="color: #10b981; font-size: 1.1rem; text-decoration: none; font-weight: bold;">📞 9863454182</a>
+            </p>
+            <button class="btn" onclick="closeDeveloperModal()" style="margin-top: 15px;">OK / Close</button>
+        </div>
+    `;
+    appContainer.appendChild(overlay);
 }
 
 function renderHomeScreen(container) {
@@ -224,7 +261,6 @@ function renderUploadLoginModal(appContainer) {
     };
 }
 
-// एडमिन मेनू: अपलोड करें या मैनेज/डिलीट करें
 function renderUploadMenuScreen(container) {
     const title = document.createElement('h3');
     title.style.marginBottom = "20px";
@@ -343,7 +379,6 @@ function renderUploadFormScreen(container) {
     };
 }
 
-// मैनेज और डिलीट स्क्रीन: सभी अपलोड किए गए पेजेस देखना और डिलीट बटन दबाना
 function renderManagePapersScreen(container) {
     const title = document.createElement('h3');
     title.style.marginBottom = "15px";
@@ -385,7 +420,6 @@ function renderManagePapersScreen(container) {
                     deleteBtn.className = 'side-delete-btn';
                     deleteBtn.innerHTML = '🗑️ Delete';
                     
-                    // डिलीट बटन पर क्लिक करते ही इमेज सर्वर से हट जाएगी
                     deleteBtn.onclick = async () => {
                         if (confirm("Are you sure you want to delete this paper page?")) {
                             try {
@@ -402,7 +436,7 @@ function renderManagePapersScreen(container) {
                                 let data = await res.json();
                                 if (data.success) {
                                     alert(data.message);
-                                    fetchPapers(); // डेटा रिफ्रेश करें
+                                    fetchPapers();
                                 } else {
                                     alert('Error: ' + data.message);
                                 }
@@ -442,3 +476,4 @@ function renderManagePapersScreen(container) {
 }
 
 fetchPapers();
+        
