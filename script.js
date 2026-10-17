@@ -2,6 +2,7 @@ let appState = {
     currentScreen: 'home', 
     selectedYear: null,
     selectedSubject: null,
+    selectedMathType: null, // 'Basic' या 'Standard' गणित के लिए
     papersData: {},
     activeImageViewer: null,
     showDeveloperModal: false
@@ -63,6 +64,8 @@ function render() {
         renderHomeScreen(body);
     } else if (appState.currentScreen === 'subjects') {
         renderSubjectsScreen(body);
+    } else if (appState.currentScreen === 'mathSubtype') {
+        renderMathSubtypeScreen(body);
     } else if (appState.currentScreen === 'viewer') {
         renderViewerScreen(body);
     } else if (appState.currentScreen === 'uploadLogin') {
@@ -147,7 +150,11 @@ function renderSubjectsScreen(container) {
         item.innerHTML = `<span>📖 ${subject}</span> ➔`;
         item.onclick = () => {
             appState.selectedSubject = subject;
-            appState.currentScreen = 'viewer';
+            if (subject === 'Mathematics') {
+                appState.currentScreen = 'mathSubtype'; // गणित चुनने पर बेसिक/स्टैंडर्ड स्क्रीन खुलेगी
+            } else {
+                appState.currentScreen = 'viewer';
+            }
             render();
         };
         container.appendChild(item);
@@ -163,19 +170,72 @@ function renderSubjectsScreen(container) {
     container.appendChild(backBtn);
 }
 
+// गणित के अंदर Basic और Standard चुनने की स्क्रीन
+function renderMathSubtypeScreen(container) {
+    const title = document.createElement('h3');
+    title.style.marginBottom = "15px";
+    title.innerText = `Mathematics (${appState.selectedYear})`;
+    container.appendChild(title);
+
+    const basicItem = document.createElement('div');
+    basicItem.className = 'list-item';
+    basicItem.innerHTML = `<span>📐 Mathematics - Basic</span> ➔`;
+    basicItem.onclick = () => {
+        appState.selectedMathType = 'Basic';
+        appState.currentScreen = 'viewer';
+        render();
+    };
+    container.appendChild(basicItem);
+
+    const standardItem = document.createElement('div');
+    standardItem.className = 'list-item';
+    standardItem.innerHTML = `<span>📊 Mathematics - Standard</span> ➔`;
+    standardItem.onclick = () => {
+        appState.selectedMathType = 'Standard';
+        appState.currentScreen = 'viewer';
+        render();
+    };
+    container.appendChild(standardItem);
+
+    const backBtn = document.createElement('button');
+    backBtn.className = 'btn btn-secondary';
+    backBtn.style.marginTop = "15px";
+    backBtn.innerText = '⬅ Back to Subjects';
+    backBtn.onclick = () => {
+        appState.currentScreen = 'subjects';
+        render();
+    };
+    container.appendChild(backBtn);
+}
+
 function renderViewerScreen(container) {
     const title = document.createElement('h3');
     title.style.marginBottom = "15px";
-    title.innerText = `${appState.selectedSubject} (${appState.selectedYear})`;
+    let displayTitle = appState.selectedSubject;
+    if (appState.selectedSubject === 'Mathematics') {
+        displayTitle += ` (${appState.selectedMathType})`;
+    }
+    title.innerText = `${displayTitle} - ${appState.selectedYear}`;
     container.appendChild(title);
 
     let yearData = appState.papersData[appState.selectedYear];
-    let pages = yearData && yearData[appState.selectedSubject] ? yearData[appState.selectedSubject] : [];
+    let pages = [];
+
+    if (yearData) {
+        if (appState.selectedSubject === 'Mathematics') {
+            let mathObj = yearData['Mathematics'];
+            if (mathObj && typeof mathObj === 'object') {
+                pages = mathObj[appState.selectedMathType] || [];
+            }
+        } else {
+            pages = yearData[appState.selectedSubject] || [];
+        }
+    }
 
     if (pages.length === 0) {
         const noData = document.createElement('div');
         noData.className = 'no-data';
-        noData.innerText = 'No question papers uploaded for this year and subject yet.';
+        noData.innerText = 'No question papers uploaded for this section yet.';
         container.appendChild(noData);
     } else {
         pages.forEach((url, index) => {
@@ -195,7 +255,8 @@ function renderViewerScreen(container) {
             const downloadBtn = document.createElement('button');
             downloadBtn.className = 'side-download-btn';
             downloadBtn.innerHTML = '📥 Download';
-            let fileName = `Paper_${appState.selectedYear.replace('-', '_')}_${appState.selectedSubject}_Page_${index+1}.jpg`;
+            let subTag = appState.selectedSubject === 'Mathematics' ? `_${appState.selectedMathType}` : '';
+            let fileName = `Paper_${appState.selectedYear.replace('-', '_')}_${appState.selectedSubject}${subTag}_Page_${index+1}.jpg`;
             downloadBtn.onclick = () => downloadImage(url, fileName);
 
             pageBox.appendChild(img);
@@ -207,15 +268,18 @@ function renderViewerScreen(container) {
     const backBtn = document.createElement('button');
     backBtn.className = 'btn btn-secondary';
     backBtn.style.marginTop = "20px";
-    backBtn.innerText = '⬅ Back to Subjects List';
+    backBtn.innerText = appState.selectedSubject === 'Mathematics' ? '⬅ Back to Math Types' : '⬅ Back to Subjects List';
     backBtn.onclick = () => {
-        appState.currentScreen = 'subjects';
+        if (appState.selectedSubject === 'Mathematics') {
+            appState.currentScreen = 'mathSubtype';
+        } else {
+            appState.currentScreen = 'subjects';
+        }
         render();
     };
     container.appendChild(backBtn);
 }
 
-// मोबाइल गैलरी में डायरेक्ट डाउनलोड करने वाला स्मार्ट फंक्शन (Blob Download)
 async function downloadImage(url, filename) {
     try {
         alert("Downloading started... Please wait 📥");
@@ -230,7 +294,6 @@ async function downloadImage(url, filename) {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(blobUrl);
     } catch (e) {
-        // अगर कोई नेटवर्क या क्रॉस-ओरिजिन इश्यू हो, तो नए टैब में खोलकर डाउनलोड का विकल्प देगा
         window.open(url, '_blank');
     }
 }
@@ -239,7 +302,8 @@ function renderImageViewerModal(appContainer) {
     const overlay = document.createElement('div');
     overlay.className = 'fullscreen-modal';
     
-    let fileName = `Paper_${appState.selectedYear ? appState.selectedYear.replace('-', '_') : 'Exam'}_Page.jpg`;
+    let subTag = appState.selectedSubject === 'Mathematics' ? `_${appState.selectedMathType}` : '';
+    let fileName = `Paper_${appState.selectedYear ? appState.selectedYear.replace('-', '_') : 'Exam'}_${appState.selectedSubject || ''}${subTag}_Page.jpg`;
 
     overlay.innerHTML = `
         <div class="fullscreen-content">
@@ -351,6 +415,15 @@ function renderUploadFormScreen(container) {
             ${subjectsList.map(s => `<option value="${s}">${s}</option>`).join('')}
         </select>
 
+        <!-- गणित चुनने पर दिखने वाला Basic/Standard विकल्प -->
+        <div id="mathSubCategoryDiv" style="display: none; margin-top: 15px;">
+            <label>Mathematics Type:</label>
+            <select id="upSubCategory">
+                <option value="Basic">Basic</option>
+                <option value="Standard">Standard</option>
+            </select>
+        </div>
+
         <label style="margin-top: 15px;">Select Paper Pages (Multiple images allowed):</label>
         <input type="file" id="upFiles" multiple accept="image/*">
 
@@ -359,9 +432,21 @@ function renderUploadFormScreen(container) {
     `;
     container.appendChild(card);
 
+    const subjectSelect = card.querySelector('#upSubject');
+    const mathSubDiv = card.querySelector('#mathSubCategoryDiv');
+
+    subjectSelect.onchange = () => {
+        if (subjectSelect.value === 'Mathematics') {
+            mathSubDiv.style.display = 'block';
+        } else {
+            mathSubDiv.style.display = 'none';
+        }
+    };
+
     card.querySelector('#submitUpload').onclick = async () => {
         let year = card.querySelector('#upYear').value;
         let subject = card.querySelector('#upSubject').value;
+        let subCategory = subject === 'Mathematics' ? card.querySelector('#upSubCategory').value : '';
         let filesInput = card.querySelector('#upFiles');
 
         if (filesInput.files.length === 0) {
@@ -373,6 +458,7 @@ function renderUploadFormScreen(container) {
         formData.append('password', '12300pawandevprasad03112010@gtss');
         formData.append('year', year);
         formData.append('subject', subject);
+        formData.append('sub_category', subCategory);
         
         for (let i = 0; i < filesInput.files.length; i++) {
             formData.append('files', filesInput.files[i]);
@@ -419,70 +505,41 @@ function renderManagePapersScreen(container) {
 
     for (let year in appState.papersData) {
         for (let subject in appState.papersData[year]) {
-            let pages = appState.papersData[year][subject];
-            if (pages && pages.length > 0) {
-                hasPapers = true;
-                
-                let sectionTitle = document.createElement('h4');
-                sectionTitle.style.margin = "15px 0 8px 0";
-                sectionTitle.style.color = "var(--primary)";
-                sectionTitle.innerText = `${subject} (${year})`;
-                container.appendChild(sectionTitle);
+            let subjectData = appState.papersData[year][subject];
 
-                pages.forEach((url, index) => {
-                    const pageBox = document.createElement('div');
-                    pageBox.className = 'paper-box';
+            if (subject === 'Mathematics' && typeof subjectData === 'object' && !Array.isArray(subjectData)) {
+                // गणित के अंदर Basic और Standard दोनों को अलग दिखाना
+                ['Basic', 'Standard'].forEach(mathType => {
+                    let pages = subjectData[mathType] || [];
+                    if (pages.length > 0) {
+                        hasPapers = true;
+                        
+                        let sectionTitle = document.createElement('h4');
+                        sectionTitle.style.margin = "15px 0 8px 0";
+                        sectionTitle.style.color = "var(--primary)";
+                        sectionTitle.innerText = `Mathematics - ${mathType} (${year})`;
+                        container.appendChild(sectionTitle);
 
-                    const img = document.createElement('img');
-                    img.src = url;
-                    img.className = 'paper-page-thumb';
-                    
-                    const actionDiv = document.createElement('div');
-                    actionDiv.className = 'action-buttons';
-
-                    const downloadBtn = document.createElement('button');
-                    downloadBtn.className = 'side-download-btn';
-                    downloadBtn.innerHTML = '📥 Download';
-                    let fileName = `Paper_${year.replace('-', '_')}_${subject}_Page_${index+1}.jpg`;
-                    downloadBtn.onclick = () => downloadImage(url, fileName);
-
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'side-delete-btn';
-                    deleteBtn.innerHTML = '🗑️ Delete';
-                    
-                    deleteBtn.onclick = async () => {
-                        if (confirm("Are you sure you want to delete this paper page?")) {
-                            try {
-                                let res = await fetch('/api/delete', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        password: '12300pawandevprasad03112010@gtss',
-                                        year: year,
-                                        subject: subject,
-                                        url: url
-                                    })
-                                });
-                                let data = await res.json();
-                                if (data.success) {
-                                    alert(data.message);
-                                    fetchPapers();
-                                } else {
-                                    alert('Error: ' + data.message);
-                                }
-                            } catch (e) {
-                                alert('Delete failed!');
-                            }
-                        }
-                    };
-
-                    actionDiv.appendChild(downloadBtn);
-                    actionDiv.appendChild(deleteBtn);
-
-                    pageBox.appendChild(img);
-                    pageBox.appendChild(actionDiv);
-                    container.appendChild(pageBox);
+                        pages.forEach((url, index) => {
+                            createManagePaperBox(container, year, subject, mathType, url, index);
+                        });
+                    }
                 });
+            } else {
+                let pages = Array.isArray(subjectData) ? subjectData : [];
+                if (pages.length > 0) {
+                    hasPapers = true;
+                    
+                    let sectionTitle = document.createElement('h4');
+                    sectionTitle.style.margin = "15px 0 8px 0";
+                    sectionTitle.style.color = "var(--primary)";
+                    sectionTitle.innerText = `${subject} (${year})`;
+                    container.appendChild(sectionTitle);
+
+                    pages.forEach((url, index) => {
+                        createManagePaperBox(container, year, subject, null, url, index);
+                    });
+                }
             }
         }
     }
@@ -505,5 +562,61 @@ function renderManagePapersScreen(container) {
     container.appendChild(backBtn);
 }
 
+function createManagePaperBox(container, year, subject, subCategory, url, index) {
+    const pageBox = document.createElement('div');
+    pageBox.className = 'paper-box';
+
+    const img = document.createElement('img');
+    img.src = url;
+    img.className = 'paper-page-thumb';
+    
+    const actionDiv = document.createElement('div');
+    actionDiv.className = 'action-buttons';
+
+    const downloadBtn = document.createElement('button');
+    downloadBtn.className = 'side-download-btn';
+    downloadBtn.innerHTML = '📥 Download';
+    let subTag = subCategory ? `_${subCategory}` : '';
+    let fileName = `Paper_${year.replace('-', '_')}_${subject}${subTag}_Page_${index+1}.jpg`;
+    downloadBtn.onclick = () => downloadImage(url, fileName);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'side-delete-btn';
+    deleteBtn.innerHTML = '🗑️ Delete';
+    
+    deleteBtn.onclick = async () => {
+        if (confirm("Are you sure you want to delete this paper page?")) {
+            try {
+                let res = await fetch('/api/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        password: '12300pawandevprasad03112010@gtss',
+                        year: year,
+                        subject: subject,
+                        sub_category: subCategory,
+                        url: url
+                    })
+                });
+                let data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    fetchPapers();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Delete failed!');
+            }
+        }
+    };
+
+    actionDiv.appendChild(downloadBtn);
+    actionDiv.appendChild(deleteBtn);
+
+    pageBox.appendChild(img);
+    pageBox.appendChild(actionDiv);
+    container.appendChild(pageBox);
+}
+
 fetchPapers();
-                                                         
