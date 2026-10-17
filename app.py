@@ -22,7 +22,23 @@ def load_db():
     return {}
   with open(DB_FILE, "r") as f:
     try:
-      return json.load(f)
+      data = json.load(f)
+      # पुराने डेटा को माइग्रेट करने के लिए: यदि विषय Mathematics है और उसमें Basic/Standard नहीं है, तो उसे 'Basic' सेट करें
+      for year in data:
+        if "Mathematics" in data[year]:
+          # अगर पुराना डेटा लिस्ट के रूप में है, तो उसे नए स्ट्रक्चर में बदलें
+          if isinstance(data[year]["Mathematics"], list):
+            old_papers = data[year]["Mathematics"]
+            data[year]["Mathematics"] = {
+                "Basic": old_papers,
+                "Standard": []
+            }
+          elif isinstance(data[year]["Mathematics"], dict):
+            if "Basic" not in data[year]["Mathematics"]:
+              data[year]["Mathematics"]["Basic"] = []
+            if "Standard" not in data[year]["Mathematics"]:
+              data[year]["Mathematics"]["Standard"] = []
+      return data
     except:
       return {}
 
@@ -55,6 +71,7 @@ def upload_paper():
 
   year = request.form.get("year")
   subject = request.form.get("subject")
+  sub_category = request.form.get("sub_category", "")  # Basic या Standard
   files = request.files.getlist("files")
 
   if not year or not subject or not files:
@@ -69,8 +86,27 @@ def upload_paper():
   db = load_db()
   if year not in db:
     db[year] = {}
-  if subject not in db[year]:
-    db[year][subject] = []
+
+  if subject == "Mathematics":
+    if not sub_category:
+      sub_category = "Basic"  # डिफ़ॉल्ट बेसिक
+    if (
+        not isinstance(db[year].get("Mathematics"), dict)
+        or "Basic" not in db[year]["Mathematics"]
+    ):
+      # अगर पुराना डेटा लिस्ट था तो उसे सही करें
+      old_list = (
+          db[year]["Mathematics"]
+          if isinstance(db[year].get("Mathematics"), list)
+          else []
+      )
+      db[year]["Mathematics"] = {"Basic": old_list, "Standard": []}
+
+    target_container = db[year]["Mathematics"][sub_category]
+  else:
+    if subject not in db[year]:
+      db[year][subject] = []
+    target_container = db[year][subject]
 
   uploaded_urls = []
   for file in files:
@@ -87,7 +123,7 @@ def upload_paper():
           500,
       )
 
-  db[year][subject].extend(uploaded_urls)
+  target_container.extend(uploaded_urls)
   save_db(db)
 
   return jsonify({
@@ -106,14 +142,30 @@ def delete_paper():
 
   year = data.get("year")
   subject = data.get("subject")
+  sub_category = data.get("sub_category")
   img_url = data.get("url")
 
   db = load_db()
-  if year in db and subject in db[year]:
-    if img_url in db[year][subject]:
-      db[year][subject].remove(img_url)
-      save_db(db)
-      return jsonify({"success": True, "message": "Paper deleted successfully!"})
+  if year in db:
+    if subject == "Mathematics" and sub_category:
+      if (
+          isinstance(db[year].get("Mathematics"), dict)
+          and sub_category in db[year]["Mathematics"]
+      ):
+        if img_url in db[year]["Mathematics"][sub_category]:
+          db[year]["Mathematics"][sub_category].remove(img_url)
+          save_db(db)
+          return jsonify(
+              {"success": True, "message": "Paper deleted successfully!"}
+          )
+    else:
+      if subject in db[year]:
+        if img_url in db[year][subject]:
+          db[year][subject].remove(img_url)
+          save_db(db)
+          return jsonify(
+              {"success": True, "message": "Paper deleted successfully!"}
+          )
 
   return jsonify({"success": False, "message": "Paper not found!"}), 404
 
